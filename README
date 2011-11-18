@@ -2,6 +2,10 @@ Building:
 
 To build for Linux from Linux, simply navigate to the source directory and execute 'make all'.
 
+<<<<<<< HEAD
 To build for Windows from Linux, navigate to the source directory and execute 'make windows'.  If you have previously built a Linux version, you will have to remove the leftover object files either manually or with 'make clean' first.
+=======
+To build for Windows from Linux, navigate to the source directory and execute 'make windows'.  If you have previously build a Linux version, you will have to remove the left over object files either manually or with 'make clean' first.
+>>>>>>> a3fd1b9bc71cd93a0c391f426a92467aa00c55a7
 
 Building from Windows is unsupported, as it would probably be very complicated.
