@@ -8,12 +8,13 @@ void printstr (uint16_t strloc) {
 	uint8_t j = 1;
 	while (memory [strloc+i] != '$') {
 #ifdef G_OS_UNIX
-		if (memory [strloc+i] == 0xA && !cli) {			//don't print redundant line feed 
+		if (memory [strloc+i] == 0xA && 
+			(programStatus & PROGRAM_STATUS_CLI) != PROGRAM_STATUS_CLI) {			//don't print redundant line feed 
 			i++;										//if we're in UNIX
 			continue;
 		}
 #else
-	if (memory [strloc+i] == 0xD && !cli) {				//don't print redundant cr's
+	if (memory [strloc+i] == 0xD && (programStatus & PROGRAM_STATUS_CLI) != PROGRAM_STATUS_CLI) {				//don't print redundant cr's
 			i++;										//if we're in Windows
 			continue;
 	}
@@ -24,7 +25,7 @@ void printstr (uint16_t strloc) {
 		if (j == 81) {
 			buf [j] = 0;
 			buf [0] = j-1;
-			if (!cli) {
+			if ((programStatus & PROGRAM_STATUS_CLI) != PROGRAM_STATUS_CLI) {
 				g_idle_add ((GSourceFunc) writeBuf, buf);
 				g_mutex_lock (bufLock);
 				g_cond_wait (bufCond, bufLock);
@@ -38,7 +39,7 @@ void printstr (uint16_t strloc) {
 	}
 	buf [j] = 0;
 	buf [0] = j-1;
-	if (!cli) {
+	if ((programStatus & PROGRAM_STATUS_CLI) != PROGRAM_STATUS_CLI) {
 		g_idle_add ((GSourceFunc) writeBuf, buf);
 		g_mutex_lock (bufLock);
 		g_cond_wait (bufCond, bufLock);
@@ -55,7 +56,7 @@ void printchar (uint8_t ch) {
 #else
 	if (ch == 0xD) return;
 #endif
-	if (!cli) {
+	if ((programStatus & PROGRAM_STATUS_CLI) != PROGRAM_STATUS_CLI) {
 		uint8_t buf [3];
 		buf [1] = ch;
 		buf [2] = 0;
@@ -71,7 +72,7 @@ void printchar (uint8_t ch) {
 }
 
 uint8_t input (void) {
-	if (!cli) {
+	if ((programStatus & PROGRAM_STATUS_CLI) != PROGRAM_STATUS_CLI) {
 		return readChar ();
 	}
 	return 0;

@@ -3,39 +3,33 @@
 #include "common.h"
 #include "instructions.h"
 
-void initMachine (void) {
+void resetMachine (uint8_t firstRun) {
 	done = 0;
 	pc = 0x100;
 	flags = 0;
-	fillOpcodeTable ();
-}
-
-void resetMachine (void) {
-	done = 0;
-	pc = 0x100;
-	flags = 0;
+	
+	if (firstRun)
+		fillOpcodeTable ();
 }
 
 int8_t nextInstruction (void) {
 	uint8_t imm8 = 0;
 	uint16_t imm16 = 0;
 	uint8_t opcode;
+	uint8_t i;
 
 	done = 0;
+	
+	for (i = 0; i < currentBreakpoint; i++) {
+		if (breakpoints [i] == pc) 
+			programStatus |= PROGRAM_STATUS_BREAKPOINT;
+	}
 
 	opcode = getByte (pc);
 	pc++;
 
-	if (opcode == 0x8) {
-		return -1;
-	}
-
-	if (debug) {
+	if ((programStatus & PROGRAM_STATUS_DEBUG) == PROGRAM_STATUS_DEBUG) {
 		printf ("%04X:\t%02x", pc-1, opcode);	
-	}
-
-	if (opcode == 0x76) {
-		return -1;
 	}
 		
 	if (instrs [opcode].size == 2 || instrs [opcode].size == 3) {
@@ -49,7 +43,7 @@ int8_t nextInstruction (void) {
 		}
 	}
 
-	if (debug) {
+	if ((programStatus & PROGRAM_STATUS_DEBUG) == PROGRAM_STATUS_DEBUG) {
 		if (instrs[opcode].size == 2) {
 			printf (" %02x", imm8);
 		}

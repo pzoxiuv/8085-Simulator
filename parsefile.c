@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <gtk/gtk.h>
 #include <string.h>
 #include "common.h"
 
@@ -38,7 +37,7 @@ int8_t openFile (uint8_t *filename) {
 	return 0;
 }
 
-void loadProgram (void) {
+void loadCode (void) {
 	memory = malloc (4096);
 	memset (memory, 0, 4096);
 

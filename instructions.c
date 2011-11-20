@@ -182,13 +182,11 @@ void cmp (uint8_t opcode, uint16_t imm16) {
 }
 
 void jmp (uint8_t opcode, uint16_t imm16) {
-	if (imm16 == 0) {
-		done = -1;
-		return;
-	}
-
 	if (opcode == 0xC3) {							//unconditional jmp
-		pc = imm16;
+		if (imm16 == 0) 
+			done = -1;
+		else
+			pc = imm16;
 		return;
 	}
 
@@ -366,7 +364,6 @@ void call (uint8_t opcode, uint16_t imm16) {
 		}
 		else if (regs [C] == 1) {
 			regs [A] = input ();		
-			done = 2;					//update register lables after getting input
 		}
 		return;
 	}
@@ -466,6 +463,8 @@ void fillOpcodeTable (void) {
 	}
 
 	for (i = 0x40; i < 0x80; i++) {
+		if (i == 0x76)
+			continue;
 		instrs [i].size = 1;
 		instrs [i].exeInstr = *mov;
 		sprintf ((char *) instrs [i].name, "mov %c, %c", regNames [(((i & 0x30) >> 4) * 2) + ((i & 0x08) >> 3)], regNames [i & 0x07]);
