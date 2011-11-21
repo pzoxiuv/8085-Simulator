@@ -126,6 +126,8 @@ void stopButtonClicked (void) {
 		return;
 	programStatus &= ~PROGRAM_STATUS_RUNNING;
 	programStatus |= PROGRAM_STATUS_DONE;
+	updateCodeView ();
+	updateRegLbls ();
 	
 	if ((programStatus & PROGRAM_STATUS_INPUT) == PROGRAM_STATUS_INPUT) 
 		keyPress ();			/* If we're waiting for input, maunally call keypress to end the program */
@@ -176,10 +178,14 @@ void runStepButtonClicked (gpointer whichButton) {
 	}
 	else if ((programStatus & PROGRAM_STATUS_BREAKPOINT) == PROGRAM_STATUS_BREAKPOINT) { /* Stopped at BP, start running again */
 		programStatus &= ~PROGRAM_STATUS_BREAKPOINT;
-		if (stepButton)
+		if (stepButton) {
 			programStatus |= PROGRAM_STATUS_STEPPING;
-		else
+			gtk_label_set_text (statusLabel, "Status: Stepping");
+		}
+		else {
 			programStatus &= ~PROGRAM_STATUS_STEPPING;
+			gtk_label_set_text (statusLabel, "Status: Running");
+		}
 		g_cond_signal (stepCond);
 	}
 	else if ((programStatus & PROGRAM_STATUS_STEPPING) == PROGRAM_STATUS_STEPPING && stepButton) {	/* If we're here, we're running and stepping so send step signal */
@@ -361,7 +367,8 @@ gboolean updateCodeView (void) {
 	}
 	
 	path = gtk_tree_model_get_path (model, &codeIter);
-	gtk_tree_path_prev (path);	/* Since PC is updated before updating code view, the current PC 
+	//if ((programStatus & PROGRAM_STATUS_STEPPING) == PROGRAM_STATUS_STEPPING)
+		gtk_tree_path_prev (path);	/* Since PC is updated before updating code view, the current PC 
 									actually points to the next instruction.  So, move one back */
 	gtk_tree_view_scroll_to_cell (codeView, path, asmColumn, FALSE, 0, 0);
 	gtk_tree_view_set_cursor (codeView, path, asmColumn, FALSE);
