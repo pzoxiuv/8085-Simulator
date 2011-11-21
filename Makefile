@@ -1,4 +1,5 @@
 DIR=
+SRCDIR=./src/
 OBJECTS=$(DIR)main.o $(DIR)ui.o $(DIR)screen.o $(DIR)parsefile.o $(DIR)machine.o $(DIR)instructions.o $(DIR)win32.o
 CC=gcc
 CFLAGS=`pkg-config --cflags gtk+-2.0` -c -Wall
@@ -17,26 +18,26 @@ windows: $(OBJECTS)
 all: $(OBJECTS)
 	$(CC) -o $(DIR)$(EXE) $(LDFLAGS) $(OBJECTS)
 
-$(DIR)main.o: main.c common.h
-	$(CC) main.c -o $(DIR)$@ $(CFLAGS)
+$(DIR)main.o: $(SRCDIR)main.c $(SRCDIR)common.h
+	$(CC) $(SRCDIR)main.c -o $(DIR)$@ $(CFLAGS)
 
-$(DIR)ui.o: ui.c common.h
-	$(CC) ui.c -o $(DIR)$@ $(CFLAGS)
+$(DIR)ui.o: $(SRCDIR)ui.c $(SRCDIR)common.h
+	$(CC) $(SRCDIR)ui.c -o $(DIR)$@ $(CFLAGS)
 
-$(DIR)parsefile.o: parsefile.c common.h
-	$(CC) parsefile.c -o $(DIR)$@ $(CFLAGS)
+$(DIR)parsefile.o: $(SRCDIR)parsefile.c $(SRCDIR)common.h
+	$(CC) $(SRCDIR)parsefile.c -o $(DIR)$@ $(CFLAGS)
 
-$(DIR)machine.o: machine.c common.h instructions.h
-	$(CC) machine.c -o $(DIR)$@ $(CFLAGS) 
+$(DIR)machine.o: $(SRCDIR)machine.c $(SRCDIR)common.h $(SRCDIR)instructions.h
+	$(CC) $(SRCDIR)machine.c -o $(DIR)$@ $(CFLAGS) 
 
-$(DIR)instructions.o: instructions.c instructions.h
-	$(CC) instructions.c -o $(DIR)$@ $(CFLAGS) 
+$(DIR)instructions.o: $(SRCDIR)instructions.c $(SRCDIR)instructions.h
+	$(CC) $(SRCDIR)instructions.c -o $(DIR)$@ $(CFLAGS) 
 
-$(DIR)screen.o: screen.c common.h
-	$(CC) screen.c -o $(DIR)$@ $(CFLAGS) 
+$(DIR)screen.o: $(SRCDIR)screen.c $(SRCDIR)common.h
+	$(CC) $(SRCDIR)screen.c -o $(DIR)$@ $(CFLAGS) 
 
-$(DIR)win32.o: win32.c common.h
-	$(CC) win32.c -o $(DIR)$@ $(CFLAGS) -lcomdlg32
+$(DIR)win32.o: $(SRCDIR)win32.c $(SRCDIR)common.h
+	$(CC) $(SRCDIR)win32.c -o $(DIR)$@ $(CFLAGS) -lcomdlg32
 
 clean:
 	$(shell rm *.o)
