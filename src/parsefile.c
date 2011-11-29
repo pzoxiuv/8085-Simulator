@@ -9,9 +9,21 @@ uint16_t totalMemSize;
 
 int8_t readLine ();
 
-uint16_t getTotalMemSize () {
+/*
+ * Returns the total memory size, in bytes.
+ * 
+ * TODO: This seems unnecessary, possibly just make totalMemSize accessible from other files?
+ */
+
+uint16_t getTotalMemSize (void) {
 	return totalMemSize;
 }
+
+/*
+ * Prints all 4096 bytes of memory to console.  Useful for debugging.
+ * 
+ * TODO:  Eventually remove, once the memory viewer is working in the GUI.
+ */
 
 void memdump (void) {
 	int16_t i;
@@ -23,6 +35,10 @@ void memdump (void) {
 		printf ("%02X", memory[i]);
 	}
 }
+
+/*
+ * Opens the file in parameter `filename`.  Returns -1 if error, 0 otherwise.
+ */
 
 int8_t openFile (uint8_t *filename) {	
 	if (filename != NULL) {
@@ -37,6 +53,10 @@ int8_t openFile (uint8_t *filename) {
 	return 0;
 }
 
+/*
+ * Allocates space for memory, clears it, and reads the program into the memory.
+ */
+
 void loadCode (void) {
 	memory = malloc (4096);
 	memset (memory, 0, 4096);
@@ -44,19 +64,37 @@ void loadCode (void) {
 	while (readLine () != -1);
 }
 
+/*
+ * Closes file, free's the memory allocated for the user's program's memory. 
+ */
+
 void closeFile () {
 	if (inputFile != NULL) 
 		fclose (inputFile);
 	free (memory);
 }
 
+/*
+ * Returns the byte in the user's program's memory at address in parameter `memLoc`.
+ */
+
 uint8_t getByte (uint16_t memLoc) {
 	return memory [memLoc];
 }
 
+/*
+ * Sets the byte in user's program's memory to byte in parameter `byte`, at address in parameter 
+ * `memLoc`.
+ */
+
 void setByte (uint16_t memLoc, int8_t byte) {
 	memory [memLoc] = byte;
 }
+
+/*
+ * Reads and parses the .hex file, loading the program's code into it's memory.
+ * Returns the number of characters read, or -1 if at the end of the hex file.
+ */
 
 int8_t readLine (void) {
 	int8_t i;

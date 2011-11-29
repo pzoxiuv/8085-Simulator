@@ -1,11 +1,27 @@
 #include <stdint.h>	
 #include "instructions.h"
 
+/*
+ * This file contains the actual implementations for the 8085 instructions.
+ * 
+ * Each function needs to have the same prototype, so they all pass in the 8 bit opcode and 16 bits
+ * of immediate data regardless of whether or not the instruction needs it.
+ */
+
 #define GETM(h,l) ((h << 8) | l)
+
+/*
+ * Set done to -1 if we try executing an unimplemented/invalid opcode to indicate an error.
+ */
 
 void unimpl (uint8_t opcode, uint16_t imm16) {
 	done = -1;
 }
+
+/*
+ * Implements all mov and mvi instructions.  Uses the opcode to figure out which instruction is
+ * going to be executed and what registers are going to be used.
+ */
 
 void mov (uint8_t opcode, uint16_t imm16) {
 	int8_t r1, r2;
@@ -31,6 +47,10 @@ void mov (uint8_t opcode, uint16_t imm16) {
 		regs [r1] = (uint8_t) (imm16 & 0x00FF);
 	}
 }
+
+/*
+ * Implements add, adc, aci and adi instructions.
+ */
 
 void add (uint8_t opcode, uint16_t imm16) {
 	int16_t sum = 0;
@@ -79,6 +99,10 @@ void add (uint8_t opcode, uint16_t imm16) {
 	}	
 }
 
+/*
+ * Implements sub, sbb, sui, sbi instructions in a similar way to the add function.
+ */
+
 void sub (uint8_t opcode, uint16_t imm16) {
 	int16_t diff = 0;
 	uint8_t r1, r2;
@@ -125,6 +149,10 @@ void sub (uint8_t opcode, uint16_t imm16) {
 
 	updateFlags (r1);
 }
+
+/*
+ * Implements stc, cmc, cma, ana, xra, and ora instructions.
+ */
 
 void logic (uint8_t opcode, uint16_t imm16) {
 	uint8_t r1, r2;
@@ -174,12 +202,22 @@ void logic (uint8_t opcode, uint16_t imm16) {
 	flags &= 0xFE;	
 }
 
+/*
+ * Implements cmp and cpi instructions, via the sub function.
+ * 
+ * TODO:  Check if cpi actually works...
+ */
+
 void cmp (uint8_t opcode, uint16_t imm16) {
 	uint8_t a = regs [A];
 	opcode -= 0x8;								//subtract eight from opcode so we do sub, not sbb
 	sub (opcode, imm16);							
 	regs [A] = a;
 }
+
+/*
+ * Implements all jump instructions except jnk, jk, jpe and jpo.
+ */
 
 void jmp (uint8_t opcode, uint16_t imm16) {
 	if (opcode == 0xC3) {							//unconditional jmp
@@ -205,6 +243,10 @@ void jmp (uint8_t opcode, uint16_t imm16) {
 		return;
 	}
 }
+
+/*
+ * Implements rotate instructions (rlc, rrc, ral, and rar).
+ */
 
 void rotate (uint8_t opcode, uint16_t imm16) {
 	imm16 = 0;
@@ -261,6 +303,10 @@ void rotate (uint8_t opcode, uint16_t imm16) {
 	}
 }
 
+/*
+ * Implements lxi instructions.
+ */
+
 void lxi (uint8_t opcode, uint16_t imm16) {
 	if (opcode == 0x31) {
 		sp = imm16;
@@ -273,6 +319,10 @@ void lxi (uint8_t opcode, uint16_t imm16) {
 	regs [r1] = (imm16 & 0xFF00) >> 8;
 	regs [r2] = imm16 & 0x00FF;
 }
+
+/*
+ * Implements push/pop instructions.
+ */r
 
 void stck (uint8_t opcode, uint16_t imm16) {
 	uint8_t r1 = ((opcode & 0x30) >> 4) * 2;
@@ -309,6 +359,10 @@ void stck (uint8_t opcode, uint16_t imm16) {
 	}
 }
 
+/* 
+ * Implements 16 bit math instructions: dcx, inx, and dad.
+ */
+
 void math16 (uint8_t opcode, uint16_t imm16) {
 	uint8_t r1 = ((opcode & 0x30) >> 4) * 2;
 	uint8_t r2 = r1 + 1;
@@ -339,6 +393,12 @@ void math16 (uint8_t opcode, uint16_t imm16) {
 	regs [r1] = (imm16 & 0xFF00) >> 8;
 	regs [r2] = imm16 & 0x00FF;
 }
+
+/*
+ * Implements all the call instructions, except cpe and cpo.  If the address being called (which
+ * is in parameter imm16) is 5, it means the program is calling bdos, so function calls the 
+ * appropriate input/output function depending on what is in the C register.
+ */
 
 void call (uint8_t opcode, uint16_t imm16) {
 	if (opcode != 0xCD) {
@@ -376,6 +436,10 @@ void call (uint8_t opcode, uint16_t imm16) {
 	pc = imm16;	
 }
 
+/*
+ * Implements all the return instructions except rpe and rpo.
+ */
+
 void ret (uint8_t opcode, uint16_t imm16) {
 	if (opcode != 0xC9) {	
 		if ((((flags & ZF) >> 6) != ((opcode & 0x08) >> 3)) && ((opcode & 0xF0) == 0xC0)) {
@@ -397,6 +461,10 @@ void ret (uint8_t opcode, uint16_t imm16) {
 	sp++;
 }
 
+/*
+ * Implements the xchg instruction.
+ */
+
 void xchg (uint8_t opcode, uint16_t imm16) {
 	imm16 = regs [E];
 	imm16 |= regs [D] << 8;
@@ -405,6 +473,11 @@ void xchg (uint8_t opcode, uint16_t imm16) {
 	regs [L] = imm16 & 0x00FF;
 	regs [H] = imm16 >> 8;
 }
+
+/*
+ * Implements instructions dealing with memory and some other data movement: ldax, lda, sta, 
+ * stax, sphl, lhld, xthl, pchl.
+ */
 
 void mem (uint8_t opcode, uint16_t imm16) {
 	switch (opcode) {
@@ -445,6 +518,12 @@ void mem (uint8_t opcode, uint16_t imm16) {
 			pc = (regs [H] << 8) | regs [L];
 	}
 }
+
+/*
+ * This function is called once at the start of the simulator, and fills a two dimensional array
+ * of opcode_t structs with 255 structures, one for each opcode.  It sets the size, name, and
+ * pointer to the implementing function for each opcode.
+ */
 
 void fillOpcodeTable (void) {
 	uint16_t i;

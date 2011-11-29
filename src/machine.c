@@ -3,6 +3,11 @@
 #include "common.h"
 #include "instructions.h"
 
+/*
+ * Sets some variables to their starting values, fills the array of opcodes if it's the first time
+ * a program is being run.
+ */
+
 void resetMachine (uint8_t firstRun) {
 	done = 0;
 	pc = 0x100;
@@ -11,6 +16,12 @@ void resetMachine (uint8_t firstRun) {
 	if (firstRun)
 		fillOpcodeTable ();
 }
+
+/*
+ * Gets the byte in memory at address in pc (program counter).  This is the opcode.  Depending on
+ * the opcode, it then reads in one or two more bytes and puts together the immediate data, and
+ * finally executes the instruction by calling the function associated with the opcode.
+ */
 
 int8_t nextInstruction (void) {
 	uint8_t imm8 = 0;
@@ -58,10 +69,19 @@ int8_t nextInstruction (void) {
 	return done;
 }
 
+/*
+ * Prints the value in the general registers, SP, PC, and FLAGS.  Useful for debugging.
+ */
+
 void printRegs (void) {
 	printf ("A: %02X  B: %02X  C: %02X  D: %02X  E: %02X  H: %02X  L: %02X SP: %04X FLAGS: %02X", regs [A], regs [B], regs [C],
 			regs [D], regs [E], regs [H], regs [L], sp, flags); 
 }
+
+/*
+ * Puts the registers into a buffer (parameter `ptr`) so that another function can access them
+ * easily.
+ */
 
 void getRegs (uint8_t *ptr) {
 	ptr [0] = regs [A];
@@ -77,6 +97,11 @@ void getRegs (uint8_t *ptr) {
 	ptr [10] = sp & 0x00FF;
 	ptr [11] = flags;
 }
+
+/*
+ * Updates the zero flag and sign flag based on the value in the A register, which is passed in as 
+ * parameter `r1`.
+ */
 
 void updateFlags (uint8_t r1) {
 	if (regs [r1] == 0) {

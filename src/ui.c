@@ -34,6 +34,11 @@ GtkTreeViewColumn *asmColumn;
 GtkWidget *window;
 GThread *machineThread;
 
+/*
+ * Initializes everything to do with the UI: binds buttons and menuitems to their callback 
+ * functions, creates some mutexes, and enters the main GTK thread.
+ */
+
 int8_t initUI (int argc, char **argv) {
 	g_thread_init (NULL);	
 	gdk_threads_init ();	
@@ -116,10 +121,20 @@ int8_t initUI (int argc, char **argv) {
 	return 0;
 }
 
+/*
+ * Callback function for File->Quit menuitem, also called when user closes the program from some
+ * other method.  Attempts to exit cleanly.
+ */
+
 void quitProgram (void) {
 	stopProgram ();
 	gtk_main_quit ();
 }
+
+/*
+ * Callback function for the "Stop" button.  Halts the currently running program, sets program
+ * status accordingly.
+ */
 
 void stopButtonClicked (void) {
 	if ((programStatus & PROGRAM_STATUS_RUNNING) != PROGRAM_STATUS_RUNNING)
@@ -130,8 +145,13 @@ void stopButtonClicked (void) {
 	updateRegLbls ();
 	
 	if ((programStatus & PROGRAM_STATUS_INPUT) == PROGRAM_STATUS_INPUT) 
-		keyPress ();			/* If we're waiting for input, maunally call keypress to end the program */
+		keyPress ();	/* If we're waiting for input, maunally call keypress to end the program */
 }
+
+/*
+ * Callback function for "Reset" button.  If the program has stopped running, this function will
+ * put it into a state where it is ready to run again.
+ */
 
 void resetButtonClicked (void) {
 	if ((programStatus & PROGRAM_STATUS_DONE) == PROGRAM_STATUS_DONE) {
@@ -140,6 +160,14 @@ void resetButtonClicked (void) {
 		g_cond_signal (stepCond);
 	}
 }
+/* Callback function for both "Run" and "Step" button.  Depending on the state of the program
+ * (running, stepping, done running, at a breakpoint, not loaded, loaded but not started) does what
+ * is necessary (e.g. give an error if user tries running with no program loaded, steps to next
+ * instruction if stepping, etc.).
+ * 
+ * If program is loaded but not started, pressing either button starts running the program by
+ * creating a new thread (the "machine" thread) which starts in the function runProgram, in main.c
+ */
 
 void runStepButtonClicked (gpointer whichButton) {
 	GtkMessageDialog *errorDialog;
@@ -193,7 +221,18 @@ void runStepButtonClicked (gpointer whichButton) {
 	}
 }
 
-/* TODO: Clear all breakpoints menuitem */
+/* 
+ * Callback function for a row in the code view being double clicked.  When this happens, either
+ * set a breakpoint at that address or remove the breakpoint if there is already one there.
+ * 
+ * Also sets the font weight (bold/not bold) depending on whether or not there's a breakpoint on the
+ * line.
+ * 
+ * There can be at most 20 breakpoints.
+ * 
+ * TODO: Clear all breakpoints menuitem, think of a better way of managing breakpoints so there
+ * can be more than 20 of them.
+ */
 
 void rowDoubleClicked (GtkTreeView *view, GtkTreePath *pathToRow, GtkTreeViewColumn *selectedColumn, gpointer data) {
 	GtkTreeIter iter;
@@ -227,6 +266,13 @@ void rowDoubleClicked (GtkTreeView *view, GtkTreePath *pathToRow, GtkTreeViewCol
 		currentBreakpoint--;
 	}
 }
+
+/*
+ * Callback function for File->Load Program menuitem.  Sets `filename` with the file user selects.
+ * If a program is already running, it stops the program.  Sets up the simulator to be ready
+ * to run the newly loaded program.  Uses some preprocessor statements to use the native
+ * filebrowser for Windows/GTK.
+ */
 
 void loadFileClicked (void) {
 	GtkMessageDialog *errorDialog;
@@ -280,6 +326,11 @@ void loadFileClicked (void) {
 	programStatus |= PROGRAM_STATUS_LOADED;
 }
 
+/*
+ * Function called at various points where the program state changes to sets the status label
+ * accordingly.
+ */
+
 gboolean updateStatus (gpointer status) {
 	if (GPOINTER_TO_INT (status) == 1)
 		gtk_label_set_text (statusLabel, "Status: Done running");
@@ -292,6 +343,11 @@ gboolean updateStatus (gpointer status) {
 	
 	return FALSE;
 }
+
+/*
+ * Called when a new program was loaded to fill the code view with the program's opcodes and 
+ * instructions.
+ */
 
 gboolean populateCodeList (void) {
 	uint32_t oldAddr, addr = 0x100;
@@ -340,6 +396,11 @@ gboolean populateCodeList (void) {
 	return FALSE;
 }
 
+/*
+ * Updates the code view, scrolling to the current instruction's row.  Called when keyboard input
+ * is requested, the program finishes running, or after each step.
+ */
+
 gboolean updateCodeView (void) {
 	GtkTreeIter codeIter;
 	GtkTreeModel *model;
@@ -376,6 +437,10 @@ gboolean updateCodeView (void) {
 	return FALSE;
 }
 
+/*
+ * Updates the register labels, called when updateCodeView is called.
+ */
+
 gboolean updateRegLbls (void) {	
 	uint8_t i;
 	uint8_t buf [3];
@@ -396,6 +461,10 @@ gboolean updateRegLbls (void) {
 	return FALSE;
 }
 
+/*
+ * Prints the contents of parameter `buf` to the "screen" (text view).
+ */
+
 gboolean writeBuf (uint8_t *buf) {
 	g_mutex_lock (bufLock);
 	uint8_t len = buf [0];
@@ -407,13 +476,19 @@ gboolean writeBuf (uint8_t *buf) {
 	return FALSE;
 }
 
+/*
+ * Callback function for the text view, called when a key is pressed (released, actually).
+ * Stores the ASCII code of the key entered in the variable inputBuf, and sends a signal to the
+ * machine thread to let it know there's input available.
+ */
+
 void keyPress (void) {
-	g_mutex_lock (inputLock);								//Lock input mutex until we're done getting the new letter
-	gtk_text_buffer_get_end_iter (textBuf, &startIter);					//Get iter at end of buf
+	g_mutex_lock (inputLock);										//Lock input mutex until we're done getting the new letter
+	gtk_text_buffer_get_end_iter (textBuf, &startIter);				//Get iter at end of buf
 	gtk_text_iter_backward_char (&startIter);						//Move back one space	
-	gtk_text_buffer_get_end_iter (textBuf, &endIter);					//And get the iter at the end again
+	gtk_text_buffer_get_end_iter (textBuf, &endIter);				//And get the iter at the end again
 	uint8_t temp = *((uint8_t *) gtk_text_buffer_get_text (textBuf, &startIter, &endIter, FALSE));		//Get the character between the two (the last char in the buf)
-	if (temp == 0xA || temp == 0xD) {							//convert lf to cr and move back a line (only change lines if the user tells us to!)
+	if (temp == 0xA || temp == 0xD) {								//convert lf to cr and move back a line (only change lines if the user tells us to!)
 		temp = 0xD;
 		gtk_text_buffer_delete (textBuf, &startIter, &endIter);
 	}
@@ -421,6 +496,12 @@ void keyPress (void) {
 	g_mutex_unlock (inputLock);								//inputBuf has been updated, unlock the mutex
 	g_cond_signal (inputCond);								//and signal the waiting thread that its input is ready
 }
+
+/*
+ * Called from the machine thread, waits until the signal to indicate a character has been entered
+ * and returns the contents of the input buffer (which should contain the character that was just
+ * entered).
+ */
 
 uint8_t readChar (void) {
 	programStatus |= PROGRAM_STATUS_INPUT;

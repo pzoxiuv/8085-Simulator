@@ -5,6 +5,11 @@
 #include <glib.h>
 #include "common.h"
 
+/* Loads the program by calling a bunch of helper functions to open the .hex file, load the code 
+ * into memory, and set the inital values for stuff like the program counter and flags.
+ * Returns -1 if there was an error opening the .hex file, 0 otherwise.
+ */
+
 int8_t loadProgram (void *filename) {
 	if (openFile (filename) == -1) {
 		return -1;
@@ -16,6 +21,11 @@ int8_t loadProgram (void *filename) {
 	return 0;
 }
 
+/*
+ * Main program loop: calls nextInstruction () to execute next instruction, updates UI, waits for
+ * various signals if breakpoints are reached or the user is stepping, handles finishing execution
+ * and starting again.
+ */
 void *runProgram (void *data) {
 	int8_t instructionResult = 0;
 	
@@ -64,9 +74,18 @@ void *runProgram (void *data) {
 	return NULL;
 }
 
+/*
+ * TODO: Is this function really needed?
+ */
+
 void stopProgram (void) {
 	closeFile ();
 }
+
+/*
+ * Parses command line arguments, either loads program and enters main program loop (cli) or call
+ * initUI to initializes the UI, load program, and enter main program loop.
+ */
 
 int main (int argc, char **argv) { 
 	

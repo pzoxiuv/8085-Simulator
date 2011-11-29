@@ -2,6 +2,13 @@
 #include <string.h>
 #include "common.h"
 
+/*
+ * Uses some native Win32 code so the filebrowser used for selecting a .hex file
+ * is the normal one used in Windows (instead of the GTK filebrowser).
+ * 
+ * Code is roughly copied from http://ricardo.ecn.wfu.edu/~cottrell/gtk_win32/ .
+ */
+
 #ifdef G_OS_WIN32
 
 #include <windows.h>

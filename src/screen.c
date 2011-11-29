@@ -2,6 +2,12 @@
 #include <stdint.h>
 #include "common.h"
 
+/*
+ * Prints a string to the screen: copies bytes from memory into a buffer, starting at the parameter 
+ * `strloc` and stopping when it reaches the terminating character, '$'.  Removes line feeds or
+ * carriage returns, depending on what system we're on (otherwise it advances an extra line).
+ */
+
 void printstr (uint16_t strloc) {
 	uint16_t i = 0;
 	uint8_t buf [82];
@@ -50,6 +56,11 @@ void printstr (uint16_t strloc) {
 	}
 }
 
+/*
+ * Same as printstr, but instead of copying the string from memory now we just form a single
+ * character string with the parameter `ch`.
+ */
+
 void printchar (uint8_t ch) {
 #ifdef G_OS_UNIX
 	if (ch == 0xA) return;					//Get outta here with yer lf's! (if you're in UNIX...')
@@ -70,6 +81,10 @@ void printchar (uint8_t ch) {
 		printf ("%c", ch);	
 	}
 }
+
+/*
+ * Returns ASCII code for character given by user.
+ */
 
 uint8_t input (void) {
 	if ((programStatus & PROGRAM_STATUS_CLI) != PROGRAM_STATUS_CLI) {
